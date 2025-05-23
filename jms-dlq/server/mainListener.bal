@@ -19,9 +19,9 @@ listener jms:Listener mainListener = check new (
 service on mainListener {
 
     remote function onMessage(jms:Message message) returns error? {
-        map<anydata> messageContent = check message["content"].cloneWithType();
-        io:println("📦  Received message: " + messageContent.toString());
+        io:println("📦  Received message: " + message.toString());
         do {
+            map<anydata> messageContent = check message["content"].cloneWithType();
             http:Client httpClient = check new ("http://localhost:8080/api/v1");
             anydata _ = check httpClient->/orders.post(messageContent);
         } on fail error err {
@@ -34,12 +34,13 @@ service on mainListener {
                 'type: jms:QUEUE,
                 name: "my.dlq"
             });
-            message["content"] = {
-                content: messageContent,
-                errorMessage: err.message()
+            jms:TextMessage dlqMessage = {
+                content: {
+                    jmsMessage: message,
+                    errMessage: err.message()
+                }.toString()
             };
-            io:println("message: " + message.toString());
-            check orderProducer->send(message);
+            check orderProducer->send(dlqMessage);
         }
     }
 }

@@ -17,7 +17,7 @@ listener jms:Listener dlListener = check new (
 service on dlListener {
 
     remote function onMessage(jms:Message message) returns error? {
-        io:println("⚠️  Dead-letter received: " + message["content"].toString());
+        io:println("⚠️  Dead-letter received: " + message.toString());
     }
 }
 
